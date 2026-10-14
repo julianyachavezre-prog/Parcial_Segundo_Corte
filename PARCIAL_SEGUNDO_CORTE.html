@@ -1,0 +1,251 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de tareas pendientes</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background-color: #80bfff;
+            margin: 30px;
+        }
+
+        .contenedor {
+            background-color: white;
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+            border: 2px solid blue;
+        }
+
+        h1 {
+            text-align: center;
+            color: blue;
+        }
+
+        /* Estilo de la foto */
+        .foto {
+            display: block;
+            width: 120px;
+            height: 100px;
+            object-fit: cover;
+            border: 2px solid blue;
+            margin: 10px auto;
+        }
+
+        input {
+            padding: 8px;
+        }
+
+        button {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .panel {
+            background-color: #e6f2ff;
+            border: 1px solid blue;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .tarea {
+            background-color: white;
+            border: 1px solid #6699cc;
+            padding: 10px;
+            margin: 8px 0;
+        }
+
+        .tarea.completada span {
+            text-decoration: line-through;
+            color: gray;
+        }
+
+        .texto {
+            margin-left: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="contenedor">
+
+        <!-- Foto antes del título -->
+        <img src="foto.jpg" alt="Foto de la página" class="foto">
+
+        <h1>Lista de tareas pendientes</h1>
+
+        <p>Escribe tus tareas.</p>
+
+        <form id="formulario">
+            <input type="text" id="entradaTarea"
+                   placeholder="Escribe una tarea">
+
+            <button type="submit">Agregar</button>
+        </form>
+
+        <div class="panel">
+            <h3>Mis tareas</h3>
+            <div id="listaTareas"></div>
+        </div>
+
+        <div class="panel">
+            <h3>Estado de las tareas</h3>
+
+            <p id="total">Total de tareas: 0</p>
+            <p id="pendientes">Tareas pendientes: 0</p>
+            <p id="completadas">Tareas completadas: 0</p>
+        </div>
+
+        <div class="panel">
+            <h3>Otras funciones</h3>
+
+            <button id="guardar" type="button">
+                Guardar tareas
+            </button>
+
+            <button id="eliminarCompletadas" type="button">
+                Eliminar tareas completadas
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        const formulario = document.getElementById("formulario");
+        const entradaTarea = document.getElementById("entradaTarea");
+        const listaTareas = document.getElementById("listaTareas");
+
+        let tareas = [];
+
+        // Cargar las tareas guardadas
+        try {
+            tareas = JSON.parse(localStorage.getItem("misTareas")) || [];
+        } catch (error) {
+            tareas = [];
+        }
+
+        // Guardar las tareas en el navegador
+        function guardarTareas() {
+            try {
+                localStorage.setItem("misTareas", JSON.stringify(tareas));
+                return true;
+            } catch (error) {
+                alert("No se pudieron guardar las tareas.");
+                return false;
+            }
+        }
+
+        // Mostrar las tareas
+        function mostrarTareas() {
+            listaTareas.innerHTML = "";
+
+            tareas.forEach(function(tarea, indice) {
+                const div = document.createElement("div");
+                div.className = "tarea";
+
+                if (tarea.completada) {
+                    div.classList.add("completada");
+                }
+
+                const casilla = document.createElement("input");
+                casilla.type = "checkbox";
+                casilla.checked = tarea.completada;
+
+                const texto = document.createElement("span");
+                texto.className = "texto";
+                texto.textContent = tarea.nombre;
+
+                const botonEliminar = document.createElement("button");
+                botonEliminar.textContent = "Eliminar";
+                botonEliminar.type = "button";
+
+                // Marcar tarea como completada
+                casilla.addEventListener("change", function() {
+                    tareas[indice].completada = casilla.checked;
+                    guardarTareas();
+                    mostrarTareas();
+                });
+
+                // Eliminar una tarea
+                botonEliminar.addEventListener("click", function() {
+                    tareas.splice(indice, 1);
+                    guardarTareas();
+                    mostrarTareas();
+                });
+
+                div.appendChild(casilla);
+                div.appendChild(texto);
+                div.appendChild(botonEliminar);
+
+                listaTareas.appendChild(div);
+            });
+
+            const cantidadPendientes = tareas.filter(function(tarea) {
+                return !tarea.completada;
+            }).length;
+
+            const cantidadCompletadas = tareas.filter(function(tarea) {
+                return tarea.completada;
+            }).length;
+
+            document.getElementById("total").textContent =
+                "Total de tareas: " + tareas.length;
+
+            document.getElementById("pendientes").textContent =
+                "Tareas pendientes: " + cantidadPendientes;
+
+            document.getElementById("completadas").textContent =
+                "Tareas completadas: " + cantidadCompletadas;
+        }
+
+        // Agregar una tarea
+        formulario.addEventListener("submit", function(evento) {
+            evento.preventDefault();
+
+            const nombre = entradaTarea.value.trim();
+
+            if (nombre === "") {
+                alert("Escribe una tarea.");
+                return;
+            }
+
+            tareas.push({
+                nombre: nombre,
+                completada: false
+            });
+
+            guardarTareas();
+            mostrarTareas();
+
+            entradaTarea.value = "";
+        });
+
+        // Guardar con el botón
+        document.getElementById("guardar").addEventListener("click", function() {
+            if (guardarTareas()) {
+                alert("Tareas guardadas correctamente.");
+            }
+        });
+
+        // Eliminar todas las tareas completadas
+        document.getElementById("eliminarCompletadas")
+            .addEventListener("click", function() {
+                tareas = tareas.filter(function(tarea) {
+                    return !tarea.completada;
+                });
+
+                guardarTareas();
+                mostrarTareas();
+            });
+
+        // Mostrar las tareas al abrir la página
+        mostrarTareas();
+    </script>
+
+</body>
+</html>
+
